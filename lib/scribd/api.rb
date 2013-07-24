@@ -135,7 +135,7 @@ module Scribd
       debug "** End response"
 
       # Convert response into XML
-      xml = REXML::Document.new(res.body)
+      xml = body_xml(res)
       raise MalformedResponseError, "The response received from the remote host could not be interpreted" unless xml.elements['/rsp']
 
       # See if there was an error and raise an exception
@@ -264,6 +264,17 @@ module Scribd
     #   args - content to output
     def debug(str)
       $stderr.puts(str) if @debug
+    end
+    
+    # Get xml from response. First attempt to un gzip (for ruby 2 compatibility)
+    # then process XML
+    def body_xml(response)
+      body = begin
+        Zlib::GzipReader.new(StringIO.new(response.body)).read
+      rescue Zlib::GzipFile::Error
+        response.body
+      end
+      REXML::Document.new(body)
     end
   end
 
